@@ -1,0 +1,29 @@
+#!/usr/bin/make -f
+
+VERSION=$(shell dpkg-parsechangelog | sed -rne 's,^Version: ([^-]+).*,\1,p')
+SVN_REV=$(shell dpkg-parsechangelog | sed -rne 's,^Version: .*r([^-]+).*,\1,p')
+SVN_URL=http://svn.unix-ag.uni-kl.de/vpnc/trunk/
+ORIGDIR=vpnc-$(VERSION)
+TARNAME=vpnc_$(VERSION).orig.tar.gz
+
+export DEB_BUILD_MAINT_OPTIONS = hardening=+all
+
+get-orig-source:
+	rm -rf $(ORIGDIR)
+	git svn clone -r $(SVN_REV) $(SVN_URL) $(ORIGDIR)
+	rm -rf $(ORIGDIR)/.git
+	tar czf ../$(TARNAME) $(ORIGDIR)
+	rm -rf $(ORIGDIR)
+
+%:
+	dh $@
+
+override_dh_auto_install:
+	dh_auto_install -- PREFIX=/usr install
+	rm ./debian/vpnc/usr/share/doc/vpnc/COPYING
+	rm ./debian/vpnc/etc/vpnc/vpnc-script
+
+override_dh_fixperms:
+	dh_fixperms
+	chmod 700 ./debian/vpnc/etc/vpnc
+	chmod 600 ./debian/vpnc/etc/vpnc/default.conf
